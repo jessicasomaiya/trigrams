@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 var m *brain.Memory
 
 func init() {
+	// create memory as global variable at the beginning of the program
 	m = brain.MakeMemory()
 }
 
@@ -21,6 +21,7 @@ func main() {
 	http.HandleFunc("/generate", generate)
 
 	log.Println("\n\nStarting server at port 8080")
+
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
@@ -31,19 +32,29 @@ func learn(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest) //change
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	r.Body.Close()
+
+	mime := r.Header.Get("Content-Type")
+
+	if mime != "text/plain" {
+		log.Printf("Invalid Content-Type: %s", mime)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	input := string(resp)
-	if err := m.Learn(input); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest) //change
+	if err := m.Learn(string(resp)); err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	fmt.Fprintf(w, "Thank you, lesson learned")
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {
-	m.Generate(w)
+	if err := m.Generate(w); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }

@@ -2,6 +2,7 @@ package learn
 
 import (
 	"bytes"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,13 @@ func TestGetSuffix(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			tr := tc.trigram
-			assert.Equal(t, tc.expected, tr.getSuffix())
+			actual, err := tr.getSuffix()
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, tc.expected, actual)
 
 		})
 	}
@@ -93,7 +100,9 @@ func TestLearn(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := MakeMemory()
-			m.Learn(tc.input)
+			if err := m.Learn(tc.input); err != nil {
+				t.Error(err.Error())
+			}
 
 			assert.Equal(t, tc.expected, m.brain)
 		})
@@ -131,8 +140,13 @@ func TestRun(t *testing.T) {
 
 			m := MakeMemory()
 
-			m.Learn(tc.input)
-			m.Run("to be", &buf)
+			if err := m.Learn(tc.input); err != nil {
+				t.Error(err.Error())
+			}
+
+			if err := m.Run("to be", &buf); err != nil {
+				t.Error(err.Error())
+			}
 
 			exp := tc.expected[0]
 			if len(buf.String()) == 26 {
@@ -140,6 +154,29 @@ func TestRun(t *testing.T) {
 			}
 
 			assert.Equal(t, exp, buf.String())
+		})
+	}
+
+}
+
+// TestRegEx is a test for piece of mind
+func TestRegEx(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "spaces",
+			input:    "to be or not\nto     be",
+			expected: "to be or not to be",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			reg := regexp.MustCompile(`\s+`)
+
+			assert.Equal(t, tc.expected, reg.ReplaceAllString((tc.input), " "))
+
 		})
 	}
 
