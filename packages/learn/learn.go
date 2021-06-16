@@ -14,11 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Memory holds a map in which the key is a string of 2 words and the value
-//  is a slice of trigrams that have the key as a prefix.
 type Memory struct {
 	sync.Mutex
-	brain map[string][]trigram // holds all thre trigarams
+	brain map[string][]trigram // map in which the key is a string of 2 words and the value is a slice of trigrams that have the key as a prefix.
 	rand  *rand.Rand
 }
 
@@ -29,10 +27,10 @@ func MakeMemory() *Memory {
 	}
 }
 
-// a trigram is are strings with 3 words
+// a trigram is a strings of 3 words
 type trigram string
 
-// write writes the last word in the trigram
+// write writes the last word in the trigram to w
 func (tr trigram) write(w io.Writer) error {
 
 	if len(tr) < 3 {
@@ -47,8 +45,7 @@ func (tr trigram) write(w io.Writer) error {
 	return nil
 }
 
-// Learn populates the brain in memory which is a map. The key is a string of 2 words and the value
-//  is a slice of trigrams that have the key as a prefix.
+// Learn populates the brain in Memory using the input string
 func (m *Memory) Learn(input string) error {
 	m.Lock()
 	defer m.Unlock()
@@ -97,7 +94,7 @@ func (m *Memory) Generate(w io.Writer) error {
 	for k := range m.brain {
 		//  k is non-predicatable key
 		if err := m.Run(k, w); err != nil {
-			return errors.Wrapf(err, "m.Run - error running using starter key: %s", k)
+			return errors.Wrapf(err, "m.Run - starter key is: %s", k)
 		}
 		break
 	}
@@ -105,8 +102,8 @@ func (m *Memory) Generate(w io.Writer) error {
 	return nil
 }
 
-// Run generates a block of text using the brain in Memory. Run takes the prefix as a starting point,
-// and writes the block of text to w until no trigrams exist at given key.
+// Run generates a block of text using the brain in Memory. Run takes a prefix as a starting point
+// and writes the block of text to w until no trigrams exist at a given key.
 func (m *Memory) Run(prefix string, w io.Writer) error {
 
 	var err error
