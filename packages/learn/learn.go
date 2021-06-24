@@ -3,10 +3,10 @@ package learn
 // add concurrency
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"math/rand"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -46,40 +46,24 @@ func (tr trigram) write(w io.Writer) error {
 }
 
 // Learn populates the brain in Memory using the input string
-func (m *Memory) Learn(input string) error {
+func (m *Memory) Learn(scanner *bufio.Scanner) error {
 	m.Lock()
 	defer m.Unlock()
-	if input == "" {
-		return errors.New("empty input - please provide an input")
+
+	trigramBank := []string{}
+	for scanner.Scan() {
+
+		trigramBank = append(trigramBank, scanner.Text())
+
+		if len(trigramBank) == 3 {
+			key := strings.Join([]string{trigramBank[0], trigramBank[1]}, " ")
+			m.brain[key] = append(m.brain[key], trigram(strings.Join(trigramBank, " ")))
+			trigramBank = trigramBank[1:]
+		}
 	}
 
-	// remove new lines and spaces
-	reg := regexp.MustCompile(`\s+`)
-	input = reg.ReplaceAllString(strings.TrimSpace(input), " ")
-
-	inputSlice := strings.Split(input, " ")
-
-	if len(inputSlice) < 3 {
-		return errors.New("input too short - please an input of at least 3 words")
-	}
-
-	for k := range inputSlice {
-
-		// cannot make trigram with < 3 words because you cannot make more trigrams
-		if k == len(inputSlice)-2 {
-			return nil
-		}
-
-		// build trigram using slice of strings
-		var trig []string
-		for i := 0; i < 3; i++ {
-			trig = append(trig, inputSlice[k+i])
-		}
-
-		// create key using first 2 words of trigram
-		key := strings.Join([]string{trig[0], trig[1]}, " ")
-
-		m.brain[key] = append(m.brain[key], trigram(strings.Join(trig, " ")))
+	if err := scanner.Err(); err != nil {
+		return errors.Wrap(err, "scanner.Err")
 	}
 
 	return nil

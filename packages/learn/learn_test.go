@@ -1,8 +1,10 @@
 package learn
 
 import (
+	"bufio"
 	"bytes"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,7 +102,13 @@ func TestLearn(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := MakeMemory()
-			if err := m.Learn(tc.input); err != nil {
+			r := strings.NewReader(tc.input)
+
+			// scanner that scans an tc.input
+			scanner := bufio.NewScanner(r)
+			scanner.Split(bufio.ScanWords)
+
+			if err := m.Learn(scanner); err != nil {
 				t.Error(err.Error())
 			}
 
@@ -139,8 +147,13 @@ func TestRun(t *testing.T) {
 			var buf bytes.Buffer
 
 			m := MakeMemory()
+			r := strings.NewReader(tc.input)
 
-			if err := m.Learn(tc.input); err != nil {
+			// scanner that scans an tc.input
+			scanner := bufio.NewScanner(r)
+			scanner.Split(bufio.ScanWords)
+
+			if err := m.Learn(scanner); err != nil {
 				t.Error(err.Error())
 			}
 

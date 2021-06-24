@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"bufio"
 	"log"
 	"net/http"
 
@@ -30,22 +30,19 @@ func main() {
 
 func learn(w http.ResponseWriter, r *http.Request) {
 
-	resp, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	r.Body.Close()
+	var err error
+
+	scanner := bufio.NewScanner(r.Body)
+	scanner.Split(bufio.ScanWords)
 
 	mime := r.Header.Get("Content-Type")
-
 	if mime != "text/plain" {
 		log.Printf("Invalid Content-Type: %s", mime)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := m.Learn(string(resp)); err != nil {
+	if err := m.Learn(scanner); err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
